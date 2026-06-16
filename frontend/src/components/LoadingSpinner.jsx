@@ -1,9 +1,5 @@
 import React from 'react';
 
-/**
- * Loading Spinner Component
- * Displays a spinning indicator with optional message.
- */
 function LoadingSpinner({ message = 'Loading...', fullPage = false }) {
   if (fullPage) {
     return (

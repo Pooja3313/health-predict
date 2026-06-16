@@ -6,10 +6,7 @@ import PatientManagement from './pages/PatientManagement';
 import AddPatient from './pages/AddPatient';
 import EditPatient from './pages/EditPatient';
 
-/**
- * Main Application Component
- * Defines routing structure for the Health Prediction Dashboard.
- */
+
 function App() {
   return (
     <Layout>

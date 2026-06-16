@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-/**
- * PatientForm Component
- * Reusable form for creating and editing patients with validation.
- */
 function PatientForm({ initialData, onSubmit, isEdit = false }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({

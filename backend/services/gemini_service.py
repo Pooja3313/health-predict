@@ -1,7 +1,3 @@
-"""
-Gemini Service Module
-Uses the official Google Gemini Python SDK (google-genai) to generate health risk predictions.
-"""
 import os
 from google import genai
 import logging
@@ -77,18 +73,7 @@ def generate_health_remark(glucose: float, haemoglobin: float, cholesterol: floa
 
 
 def _fallback_assessment(glucose: float, haemoglobin: float, cholesterol: float) -> str:
-    """
-    Generate a fallback health assessment using standard medical thresholds.
-    Used when the Gemini API is unavailable or returns an error.
-
-    Args:
-        glucose (float): Blood glucose level
-        haemoglobin (float): Haemoglobin level
-        cholesterol (float): Cholesterol level
-
-    Returns:
-        str: Basic health assessment string
-    """
+   
     risks = []
 
     # Glucose thresholds

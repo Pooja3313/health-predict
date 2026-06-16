@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-/**
- * Layout Component
- * Provides the main navigation sidebar and page structure.
- */
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();

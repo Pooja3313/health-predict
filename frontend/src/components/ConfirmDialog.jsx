@@ -1,10 +1,6 @@
 import React from 'react';
 import Modal from './Modal';
 
-/**
- * Confirm Dialog Component
- * Reusable confirmation dialog for delete operations.
- */
 function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, loading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title || 'Confirm Action'} size="sm">

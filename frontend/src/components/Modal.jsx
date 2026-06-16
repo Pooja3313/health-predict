@@ -1,9 +1,5 @@
 import React from 'react';
 
-/**
- * Modal Component
- * Reusable modal dialog with overlay and proper border.
- */
 function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   if (!isOpen) return null;
 

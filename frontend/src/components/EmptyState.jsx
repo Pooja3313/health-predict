@@ -1,9 +1,5 @@
 import React from 'react';
 
-/**
- * Empty State Component
- * Displays when there are no records to show.
- */
 function EmptyState({ title = 'No records found', message = 'Get started by adding your first patient record.', action, actionLabel }) {
   return (
     <div className="text-center py-12">
