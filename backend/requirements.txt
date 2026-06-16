@@ -1,0 +1,24 @@
+# Flask Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# MongoDB Driver
+pymongo==4.6.1
+
+# Google Gemini AI SDK (official)
+google-genai==2.8.0
+
+# HTTP Client
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# WSGI Server
+gunicorn==21.2.0
+
+# Data Serialization
+Werkzeug==3.0.1
+
+# Type Hints
+typing-extensions==4.8.0
