@@ -1,6 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
+function validateEmail(email) {
+  if (!email || !email.trim()) {
+    return 'Email is required';
+  }
+  const trimmed = email.trim();
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+  if (!pattern.test(trimmed)) {
+    return 'Invalid email';
+  }
+  const parts = trimmed.split('@');
+  if (parts.length !== 2) {
+    return 'Invalid email';
+  }
+  const domain = parts[1];
+  if (!domain.includes('.')) {
+    return 'Invalid email';
+  }
+  if (domain.includes('..')) {
+    return 'Invalid email';
+  }
+  return '';
+}
+
+function validateDateOfBirth(dobValue) {
+  const dateObj = new Date(dobValue);
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date of birth';
+  }
+
+  const parts = dobValue.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+
+    if (month < 1 || month > 12) {
+      return 'Invalid date of birth';
+    }
+
+    const daysInMonth = {
+      1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30,
+      7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31,
+    };
+
+    if (day < 1 || day > (daysInMonth[month] || 31)) {
+      return 'Invalid date of birth';
+    }
+
+    if (month === 2 && day === 29) {
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+      if (!isLeap) {
+        return 'Invalid date of birth';
+      }
+    }
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  if (dateObj > today) {
+    return 'Date of birth cannot be a future date';
+  }
+
+  return '';
+}
+
+function validateBloodTestField(value, fieldName) {
+  if (value === '' || value === null || value === undefined) {
+    return `${fieldName} is required`;
+  }
+  if (isNaN(value) || value === '') {
+    return `Invalid ${fieldName.toLowerCase()}`;
+  }
+  const num = Number(value);
+  if (num < 0) {
+    return `Invalid ${fieldName.toLowerCase()}`;
+  }
+  return '';
+}
 
 function PatientForm({ initialData, onSubmit, isEdit = false }) {
   const navigate = useNavigate();
@@ -14,64 +93,56 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [dobTouched, setDobTouched] = useState(false);
+
+  useEffect(() => {
+    if (initialData?.serverErrors) {
+      setErrors((prev) => ({
+        ...prev,
+        ...initialData.serverErrors,
+      }));
+    }
+  }, [initialData?.serverErrors]);
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Full Name validation - text only
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full Name is required';
-    } else if (formData.fullName.trim().length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
-    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.fullName.trim())) {
-      newErrors.fullName = 'Full Name must contain only letters and spaces';
+    if (!formData.fullName.trim() || formData.fullName.trim().length < 2 || formData.fullName.trim().length > 100) {
+      newErrors.fullName = 'Full name is required';
     }
 
-    // Email validation
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!emailPattern.test(formData.email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      newErrors.email = emailError;
     }
 
-    // Date of Birth validation
-    if (!formData.dob) {
-      newErrors.dob = 'Date of Birth is required';
+    // If user never touched date field -> "Date of birth is required"
+    // If user touched it and value is empty (browser cleared invalid) -> "Invalid date of birth"
+    // If user picked date from calendar -> validate normally
+    if (!dobTouched && !formData.dob) {
+      newErrors.dob = 'Date of birth is required';
+    } else if (dobTouched && !formData.dob) {
+      newErrors.dob = 'Invalid date of birth';
     } else {
-      const dobDate = new Date(formData.dob);
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (dobDate > today) {
-        newErrors.dob = 'Date of Birth cannot be a future date';
+      const dobError = validateDateOfBirth(formData.dob);
+      if (dobError) {
+        newErrors.dob = dobError;
       }
     }
 
-    // Glucose validation
-    if (!formData.glucose && formData.glucose !== 0) {
-      newErrors.glucose = 'Glucose level is required';
-    } else if (isNaN(formData.glucose) || formData.glucose === '') {
-      newErrors.glucose = 'Glucose must be a numeric value';
-    } else if (Number(formData.glucose) < 0) {
-      newErrors.glucose = 'Glucose cannot be negative';
+    const glucoseError = validateBloodTestField(formData.glucose, 'Glucose');
+    if (glucoseError) {
+      newErrors.glucose = glucoseError;
     }
 
-    // Haemoglobin validation
-    if (!formData.haemoglobin && formData.haemoglobin !== 0) {
-      newErrors.haemoglobin = 'Haemoglobin level is required';
-    } else if (isNaN(formData.haemoglobin) || formData.haemoglobin === '') {
-      newErrors.haemoglobin = 'Haemoglobin must be a numeric value';
-    } else if (Number(formData.haemoglobin) < 0) {
-      newErrors.haemoglobin = 'Haemoglobin cannot be negative';
+    const haemoglobinError = validateBloodTestField(formData.haemoglobin, 'Haemoglobin');
+    if (haemoglobinError) {
+      newErrors.haemoglobin = haemoglobinError;
     }
 
-    // Cholesterol validation
-    if (!formData.cholesterol && formData.cholesterol !== 0) {
-      newErrors.cholesterol = 'Cholesterol level is required';
-    } else if (isNaN(formData.cholesterol) || formData.cholesterol === '') {
-      newErrors.cholesterol = 'Cholesterol must be a numeric value';
-    } else if (Number(formData.cholesterol) < 0) {
-      newErrors.cholesterol = 'Cholesterol cannot be negative';
+    const cholesterolError = validateBloodTestField(formData.cholesterol, 'Cholesterol');
+    if (cholesterolError) {
+      newErrors.cholesterol = cholesterolError;
     }
 
     setErrors(newErrors);
@@ -84,12 +155,16 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
       ...prev,
       [name]: value,
     }));
-    // Clear error for the field being edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+    // Track when user interacts with date field
+    if (name === 'dob') {
+      setDobTouched(true);
     }
   };
 
@@ -111,7 +186,36 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
       };
       await onSubmit(submitData);
     } catch (err) {
-      // Error handling is done in the parent
+      if (err.errors && typeof err.errors === 'object') {
+        const serverFieldErrors = {};
+        let hasFieldError = false;
+        Object.entries(err.errors).forEach(([field, message]) => {
+          const fieldMap = {
+            fullName: 'fullName',
+            email: 'email',
+            dob: 'dob',
+            glucose: 'glucose',
+            haemoglobin: 'haemoglobin',
+            cholesterol: 'cholesterol',
+            duplicate: 'duplicate',
+          };
+          const formField = fieldMap[field];
+          if (formField) {
+            serverFieldErrors[formField] = message;
+            hasFieldError = true;
+          } else {
+            toast.error(message);
+          }
+        });
+        if (hasFieldError) {
+          setErrors((prev) => ({
+            ...prev,
+            ...serverFieldErrors,
+          }));
+        }
+      } else {
+        toast.error(err.error || 'Failed to save patient');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -122,12 +226,10 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Personal Information */}
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Full Name */}
           <div className="md:col-span-2">
             <label htmlFor="fullName" className="label">
               Full Name <span className="text-danger-500">*</span>
@@ -144,7 +246,6 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
             {errors.fullName && <p className="error-text">{errors.fullName}</p>}
           </div>
 
-          {/* Date of Birth */}
           <div>
             <label htmlFor="dob" className="label">
               Date of Birth <span className="text-danger-500">*</span>
@@ -160,7 +261,6 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
             {errors.dob && <p className="error-text">{errors.dob}</p>}
           </div>
 
-          {/* Email */}
           <div>
             <label htmlFor="email" className="label">
               Email Address <span className="text-danger-500">*</span>
@@ -179,34 +279,29 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
         </div>
       </div>
 
-      {/* Blood Test Values */}
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Blood Test Values</h3>
         <p className="text-sm text-gray-500 mb-4">
-          Enter the patient's latest blood test results. These values will be analyzed by AI to generate a health assessment.
+          Enter the patient's latest blood test results.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Glucose */}
           <div>
             <label htmlFor="glucose" className="label">
               Glucose (mg/dL) <span className="text-danger-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                id="glucose"
-                name="glucose"
-                type="number"
-                step="0.1"
-                value={formData.glucose}
-                onChange={handleChange}
-                className={`input ${errors.glucose ? 'input-error' : ''}`}
-                placeholder="e.g. 100"
-              />
-            </div>
+            <input
+              id="glucose"
+              name="glucose"
+              type="number"
+              step="0.1"
+              value={formData.glucose}
+              onChange={handleChange}
+              className={`input ${errors.glucose ? 'input-error' : ''}`}
+              placeholder="e.g. 100"
+            />
             {errors.glucose && <p className="error-text">{errors.glucose}</p>}
           </div>
 
-          {/* Haemoglobin */}
           <div>
             <label htmlFor="haemoglobin" className="label">
               Haemoglobin (g/dL) <span className="text-danger-500">*</span>
@@ -224,7 +319,6 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
             {errors.haemoglobin && <p className="error-text">{errors.haemoglobin}</p>}
           </div>
 
-          {/* Cholesterol */}
           <div>
             <label htmlFor="cholesterol" className="label">
               Cholesterol (mg/dL) <span className="text-danger-500">*</span>
@@ -244,7 +338,24 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
         </div>
       </div>
 
-      {/* AI Notice */}
+      {errors.duplicate && (
+        <div className="bg-danger-50 border border-danger-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-danger-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-danger-800">{errors.duplicate}</p>
+              <p className="text-xs text-danger-600 mt-0.5">
+                A patient with the same name, date of birth, and email already exists in the system.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl p-4 border border-primary-100">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -255,37 +366,24 @@ function PatientForm({ initialData, onSubmit, isEdit = false }) {
           <div>
             <p className="text-sm font-medium text-primary-800">AI Health Assessment</p>
             <p className="text-xs text-primary-600 mt-0.5">
-              Blood test values will be sent to Google Gemini AI for automated health risk analysis. 
-              The AI-generated remarks will be stored with the patient record.
+              Blood test values will be sent to Google Gemini AI for automated health risk analysis.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Form Actions */}
       <div className="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={submitting}
-          className="btn-secondary"
-        >
+        <button type="button" onClick={handleCancel} disabled={submitting} className="btn-secondary">
           Cancel
         </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="btn-primary min-w-[140px] flex items-center justify-center gap-2"
-        >
+        <button type="submit" disabled={submitting} className="btn-primary min-w-[140px] flex items-center justify-center gap-2">
           {submitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               {isEdit ? 'Updating...' : 'Saving...'}
             </>
           ) : (
-            <>
-              {isEdit ? 'Update Patient' : 'Save Patient'}
-            </>
+            <>{isEdit ? 'Update Patient' : 'Save Patient'}</>
           )}
         </button>
       </div>

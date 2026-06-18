@@ -20,7 +20,25 @@ class PatientController:
             sanitized_data = sanitize_patient_data(data)
             is_valid, errors = validate_patient_data(sanitized_data)
             if not is_valid:
-                return jsonify({"error": "Validation failed", "errors": errors}), 400
+                return jsonify({
+                    "error": "Validation failed",
+                    "errors": errors,
+                }), 400
+
+            # Duplicate patient check: Full Name + Date of Birth + Email
+            try:
+                duplicate_check = Patient.check_duplicate(
+                    full_name=sanitized_data.get("fullName", ""),
+                    dob=sanitized_data.get("dob"),
+                    email=sanitized_data.get("email", ""),
+                )
+                if duplicate_check:
+                    return jsonify({
+                        "error": "Patient record already exists.",
+                        "errors": {"duplicate": "Patient record already exists."},
+                    }), 400
+            except Exception as dup_err:
+                logger.warning(f"Duplicate check failed (continuing): {str(dup_err)}")
 
             if not sanitized_data.get("remarks"):
                 try:
@@ -93,7 +111,10 @@ class PatientController:
             sanitized_data = sanitize_patient_data(data)
             is_valid, errors = validate_patient_data(sanitized_data, is_update=True)
             if not is_valid:
-                return jsonify({"error": "Validation failed", "errors": errors}), 400
+                return jsonify({
+                    "error": "Validation failed",
+                    "errors": errors,
+                }), 400
 
             has_blood_changes = any(
                 field in sanitized_data for field in ["glucose", "haemoglobin", "cholesterol"]

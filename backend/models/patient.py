@@ -44,6 +44,21 @@ class Patient:
         return db[Patient.collection_name]
 
     @staticmethod
+    def check_duplicate(full_name: str, dob, email: str) -> bool:
+        """
+        Check if a patient with the same Full Name + Date of Birth + Email already exists.
+        Returns True if a duplicate exists, False otherwise.
+        """
+        collection = Patient.get_collection()
+        query = {
+            "fullName": full_name.strip(),
+            "dob": dob,
+            "email": email.strip().lower(),
+        }
+        result = collection.find_one(query)
+        return result is not None
+
+    @staticmethod
     def create_patient(data):
         collection = Patient.get_collection()
         now = datetime.utcnow()

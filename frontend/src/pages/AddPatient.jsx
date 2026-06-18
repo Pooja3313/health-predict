@@ -4,10 +4,7 @@ import PatientForm from '../components/PatientForm';
 import patientService from '../services/api';
 import toast from 'react-hot-toast';
 
-/**
- * Add Patient Page
- * Form to create a new patient with AI health assessment.
- */
+
 function AddPatient() {
   const navigate = useNavigate();
 
@@ -17,11 +14,18 @@ function AddPatient() {
       toast.success('Patient created successfully! AI health assessment generated.');
       navigate('/patients');
     } catch (err) {
-      if (err.errors) {
-        // Display validation errors from backend
-        Object.values(err.errors).forEach((msg) => {
-          toast.error(msg);
-        });
+      // Field-level errors are displayed inline by PatientForm.
+      // Only show a general toast for the main error or non-field errors.
+      if (err.errors && typeof err.errors === 'object') {
+        // Check if there are any non-field errors to toast
+        const nonFieldErrors = Object.keys(err.errors).filter(
+          (key) => !['fullName', 'email', 'dob', 'glucose', 'haemoglobin', 'cholesterol', 'duplicate'].includes(key)
+        );
+        nonFieldErrors.forEach((key) => toast.error(err.errors[key]));
+        // If we have field errors, toast a general message
+        if (Object.keys(err.errors).length > 0 && nonFieldErrors.length === 0) {
+          toast.error('Please fix the highlighted errors.');
+        }
       } else {
         toast.error(err.error || 'Failed to create patient');
       }

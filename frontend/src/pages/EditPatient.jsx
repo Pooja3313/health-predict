@@ -5,10 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import patientService from '../services/api';
 import toast from 'react-hot-toast';
 
-/**
- * Edit Patient Page
- * Loads existing patient data and allows editing with AI reassessment.
- */
+
 function EditPatient() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,10 +38,16 @@ function EditPatient() {
       toast.success('Patient updated successfully! AI health assessment regenerated.');
       navigate('/patients');
     } catch (err) {
-      if (err.errors) {
-        Object.values(err.errors).forEach((msg) => {
-          toast.error(msg);
-        });
+      // Field-level errors are displayed inline by PatientForm.
+      // Only show a general toast for the main error or non-field errors.
+      if (err.errors && typeof err.errors === 'object') {
+        const nonFieldErrors = Object.keys(err.errors).filter(
+          (key) => !['fullName', 'email', 'dob', 'glucose', 'haemoglobin', 'cholesterol', 'duplicate'].includes(key)
+        );
+        nonFieldErrors.forEach((key) => toast.error(err.errors[key]));
+        if (Object.keys(err.errors).length > 0 && nonFieldErrors.length === 0) {
+          toast.error('Please fix the highlighted errors.');
+        }
       } else {
         toast.error(err.error || 'Failed to update patient');
       }
